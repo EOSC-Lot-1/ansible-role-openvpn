@@ -1,0 +1,163 @@
+---
+- name: Setup private CA
+  include_role:
+    # https://gitlab.ebrains.eu/technical-coordination/private/devops/ansible/ansible-role-ca
+    name: ca
+  vars:
+    ca_dir: /etc/openvpn/ca
+    key_password_file: '{{ root_key_password_file }}'
+    subject:
+      country_code: '{{ country_code }}'
+      locality_name: '{{ locality_name }}'
+      organization_name: '{{ organization_name }}'
+      organizational_unit_name: '{{ organizational_unit_name }}'
+      email_address: '{{ ca_email }}'
+      common_name: 'VPN CA 1'
+  tags: [ "ca" ]
+
+- name: Enable forwarding for IPv4
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: true
+    state: present
+    reload: true
+
+- ansible.builtin.file:
+    path: /etc/openvpn/certs
+    state: directory
+    mode: '0750'
+
+- ansible.builtin.file:
+    path: /etc/openvpn/certs/clients
+    state: directory
+    mode: '0750'
+
+#
+# Generate server configuration, start VPN server
+#
+
+- name: Generate private key for VPN server
+  ansible.builtin.command:
+    cmd: >-
+      openssl genrsa -out server.key "{{ numbits }}"
+    chdir: /etc/openvpn
+    creates: /etc/openvpn/server.key
+  vars:
+    numbits: 4096
+   
+- name: Generate certificate request (CSR) for VPN server
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -new -key server.key -out server.csr -subj "{{ subj }}"
+    chdir: /etc/openvpn
+    creates: /etc/openvpn/server.csr
+  vars:
+    subj: '/C={{ country_code }}/L={{ locality_name }}/O={{ organization_name }}/OU={{ organizational_unit_name }}/CN={{ vpn_host }}/emailAddress={{ server_email }}'
+
+- name: Issue certificate for VPN server
+  ansible.builtin.command:
+    cmd: >-
+      openssl ca -config ca.conf -batch -passin env:passphrase -in /etc/openvpn/server.csr -out /etc/openvpn/server.crt -days "{{ days }}"
+    chdir: /etc/openvpn/ca
+    creates: /etc/openvpn/server.crt
+  vars:
+    days: 2190
+  environment:
+    passphrase: '{{ lookup("password", root_key_password_file) }}'
+
+- name: Generate pre-shared key for VPN
+  ansible.builtin.command:
+    cmd: >-
+      openvpn --genkey --secret auth.key
+    chdir: /etc/openvpn
+    creates: /etc/openvpn/auth.key
+  
+- name: Generate Diffie-Helman parameters
+  ansible.builtin.command:
+    cmd: >-
+      openssl dhparam -out dh.pem "{{ numbits }}"
+    chdir: /etc/openvpn
+    creates: /etc/openvpn/dh.pem
+  vars:
+    numbits: 2048
+
+- name: Generate configuration for VPN server
+  ansible.builtin.template:
+    src: server.conf.j2
+    dest: /etc/openvpn/server.conf
+    mode: '0640'
+
+- name: Enable systemd unit for VPN server
+  ansible.builtin.systemd_service:
+    name: openvpn@server.service
+    state: started
+    enabled: true
+
+#
+# Generate configuration for all VPN clients
+#
+
+- ansible.builtin.assert:
+    that:
+    - item.username is regex("[a-z][a-z0-9]+([.][a-z0-9]+)?")
+    - item.address is ansible.utils.in_network vpn_network
+  with_items: '{{ vpn_clients }}'
+
+- ansible.builtin.file:
+    path: '/etc/openvpn/certs/clients/{{ item.username }}'
+    state: directory
+    mode: '0750'
+  with_items: '{{ vpn_clients }}'
+
+- name: Generate private key for VPN client
+  ansible.builtin.command:
+    cmd: >-
+      openssl genrsa -out client.key "{{ numbits }}"
+    chdir: '/etc/openvpn/certs/clients/{{ item.username }}'
+    creates: '/etc/openvpn/certs/clients/{{ item.username }}/client.key'
+  vars:
+    numbits: 4096
+  with_items: '{{ vpn_clients }}'
+
+- name: Generate certificate request (CSR) for VPN client
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -new -key client.key -out client.csr -subj "{{ subj }}"
+    chdir: '/etc/openvpn/certs/clients/{{ item.username }}'
+    creates: '/etc/openvpn/certs/clients/{{ item.username }}/client.csr'
+  vars:
+    subj: '/C={{ country_code }}/L={{ locality_name }}/O={{ organization_name }}/OU={{ organizational_unit_name }}/CN={{ item.username }}/emailAddress={{ item.email }}'
+  with_items: '{{ vpn_clients }}'
+ 
+- name: Issue certificate for VPN client
+  ansible.builtin.command:
+    cmd: >-
+      openssl ca -config ca.conf -batch -passin env:passphrase -in "{{ client_dir }}/client.csr" -out "{{ client_dir }}/client.crt" -days "{{ days }}"
+    chdir: /etc/openvpn/ca
+    creates: '{{ client_dir }}/client.crt'
+  vars:
+    days: 730
+    client_dir: '/etc/openvpn/certs/clients/{{ item.username }}'
+  environment:
+    passphrase: '{{ lookup("password", root_key_password_file) }}'
+  with_items: '{{ vpn_clients }}'
+
+- name: Generate basic configuration for all VPN clients
+  ansible.builtin.template:
+    src: client.ovpn.j2
+    dest: /etc/openvpn/client.ovpn
+    mode: '0644'
+# FIXME
+  tags: [ "client-ovpn" ]  
+
+- name: Generate client-specific configuration for VPN
+  ansible.builtin.template:
+    src: client.j2
+    dest: '/etc/openvpn/client/{{ item.username }}'
+    mode: '0644'
+  vars:
+    address: '{{ item.address }}'
+  with_items: '{{ vpn_clients }}'
+  tags: [ "client-config-dir" ]  
+

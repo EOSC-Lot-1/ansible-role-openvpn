@@ -1,0 +1,25 @@
+port {{ vpn_port }}
+proto udp4
+dev tun1
+
+server {{ vpn_network | ansible.utils.ipaddr("network") }} {{ vpn_network | ansible.utils.ipaddr("netmask") }}
+
+client-config-dir /etc/openvpn/client/
+topology subnet
+
+keepalive 10 120
+
+tls-server
+ca ca/root.crt
+crl-verify ca/root.crl
+
+cert server.crt
+key server.key
+
+dh dh.pem
+tls-auth auth.key 0
+reneg-sec 1800 
+
+verb 3
+
+comp-lzo

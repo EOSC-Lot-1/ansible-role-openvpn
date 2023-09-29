@@ -1,0 +1,44 @@
+
+#
+# Download all client configuration to control machine
+#
+
+- ansible.builtin.fetch:
+    src: /etc/openvpn/client.ovpn
+    dest: '{{ inventory_dir }}/data/client.ovpn'
+    flat: true
+
+- ansible.builtin.fetch:
+    src: /etc/openvpn/auth.key
+    dest: '{{ inventory_dir }}/data/auth.key'
+    flat: true
+
+- ansible.builtin.fetch:
+    src: /etc/openvpn/ca/root.crt
+    dest: '{{ inventory_dir }}/data/root.crt'
+    flat: true
+
+- ansible.builtin.fetch:
+    src: '/etc/openvpn/certs/clients/{{ item.username }}/client.key'
+    dest: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.key'
+    flat: true
+  with_items: '{{ vpn_clients }}'
+ 
+- ansible.builtin.fetch:
+    src: '/etc/openvpn/certs/clients/{{ item.username }}/client.crt'
+    dest: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.crt'
+    flat: true
+  with_items: '{{ vpn_clients }}'
+ 
+- name: Create a bundle for each VPN client
+  ansible.builtin.command:
+    cmd: >-
+      7z a "-p{{ password }}" "{{ item.username }}.7z" "root.crt" "client.ovpn" "auth.key" "clients/{{ item.username }}/client.*"  
+    chdir: '{{ inventory_dir }}/data'
+    creates: '{{ item.username }}.7z'
+  vars:
+    password_file: '{{ inventory_dir }}/secrets/clients/{{ item.username }}/archive-password'
+    password: '{{ lookup("password", password_file, chars=["ascii_letters", "digits"], length=8) }}'
+  with_items: '{{ vpn_clients }}'
+  delegate_to: localhost
+

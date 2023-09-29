@@ -1,0 +1,29 @@
+# vim: set syntax=yaml:
+
+#country_code: GR
+#locality_name: Athens
+#organization_name: Athena Research Center
+#organizational_unit_name: IMSI
+
+#ca_email: info@tc.humanbrainproject.eu
+#server_email: info@tc.humanbrainproject.eu
+
+# path to a local secret holding the passphrase for the private key of the CA
+#root_key_password_file: 
+
+#vpn_host: vpn-1.tc.humanbrainproject.eu
+#vpn_port: '11194'
+#vpn_network: 10.9.8.0/24
+
+# routes to be added for all clients 
+#vpn_route_add_default_network: true
+#vpn_route_add:
+#- '172.20.0.0/16'
+  
+#vpn_clients:
+#- username: user1
+#  email: user1@example.net
+#  address: 10.9.8.12
+#- username: user2
+#  email: user2@example.net
+#  address: 10.9.8.13

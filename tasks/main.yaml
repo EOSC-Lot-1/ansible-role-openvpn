@@ -1,0 +1,14 @@
+---
+- ansible.builtin.apt:
+    update_cache: yes
+    pkg:
+    - ca-certificates
+    - fail2ban
+    - openvpn
+  tags: [ "apt" ] 
+
+- ansible.builtin.import_tasks:
+    file: 01-setup-openvpn-server.yaml
+
+- ansible.builtin.import_tasks:
+    file: 02-download-client-configuration.yaml
