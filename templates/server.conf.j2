@@ -1,5 +1,5 @@
 port {{ vpn_port }}
-proto udp4
+proto udp
 dev tun1
 
 server {{ vpn_network | ansible.utils.ipaddr("network") }} {{ vpn_network | ansible.utils.ipaddr("netmask") }}
