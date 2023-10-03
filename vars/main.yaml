@@ -19,7 +19,12 @@
 #vpn_route_add_default_network: true
 #vpn_route_add:
 #- '172.20.0.0/16'
-  
+
+# an internal DNS domain (e.g. example.corp or example.private) which should be resolved in the VPN network
+#vpn_dns_internal_domain: .example.corp.
+# the DNS server (inside the VPN network) to resolve queries for internal domains
+#vpn_dns_server: 172.20.0.5
+
 #vpn_clients:
 #- username: user1
 #  email: user1@example.net

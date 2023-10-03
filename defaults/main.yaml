@@ -17,4 +17,7 @@ vpn_network: 10.9.8.0/24
 vpn_route_add_default_network: true
 vpn_route_add: []
  
+vpn_dns_internal_domain:
+vpn_dns_server:
+
 vpn_clients: []

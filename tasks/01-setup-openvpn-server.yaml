@@ -148,12 +148,11 @@
     src: client.ovpn.j2
     dest: /etc/openvpn/client.ovpn
     mode: '0644'
-# FIXME
   tags: [ "client-ovpn" ]  
 
 - name: Generate client-specific configuration for VPN
   ansible.builtin.template:
-    src: client.j2
+    src: client-ccd.j2
     dest: '/etc/openvpn/client/{{ item.username }}'
     mode: '0644'
   vars:

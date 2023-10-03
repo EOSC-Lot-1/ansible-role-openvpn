@@ -23,3 +23,10 @@ reneg-sec 1800
 verb 3
 
 comp-lzo
+
+{% if (vpn_dns_server | ansible.utils.ipaddr) %}
+push "dhcp-option DNS {{ vpn_dns_server }}"
+{% if vpn_dns_internal_domain %}
+push "setenv-safe internal_domain {{ vpn_dns_internal_domain }}"
+{% endif %}{# if vpn_dns_internal_domain #}
+{% endif %}{# if vpn_dns_server #}

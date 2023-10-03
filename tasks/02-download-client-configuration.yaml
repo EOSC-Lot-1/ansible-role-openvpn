@@ -13,6 +13,11 @@
     dest: '{{ inventory_dir }}/data/auth.key'
     flat: true
 
+- ansible.builtin.file:
+    path: '{{ inventory_dir }}/data/auth.key'
+    mode: '0640'
+  delegate_to: localhost
+
 - ansible.builtin.fetch:
     src: /etc/openvpn/ca/root.crt
     dest: '{{ inventory_dir }}/data/root.crt'
@@ -23,17 +28,23 @@
     dest: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.key'
     flat: true
   with_items: '{{ vpn_clients }}'
- 
+
+- ansible.builtin.file:
+    path: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.key'
+    mode: '0640'
+  with_items: '{{ vpn_clients }}'
+  delegate_to: localhost
+
 - ansible.builtin.fetch:
     src: '/etc/openvpn/certs/clients/{{ item.username }}/client.crt'
     dest: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.crt'
     flat: true
   with_items: '{{ vpn_clients }}'
- 
+
 - name: Create a bundle for each VPN client
   ansible.builtin.command:
     cmd: >-
-      7z a "-p{{ password }}" "{{ item.username }}.7z" "root.crt" "client.ovpn" "auth.key" "clients/{{ item.username }}/client.*"  
+      7z a "-p{{ password }}" "{{ item.username }}.7z" "root.crt" "client.ovpn" "auth.key" "clients/{{ item.username }}/client.*"
     chdir: '{{ inventory_dir }}/data'
     creates: '{{ item.username }}.7z'
   vars:
