@@ -33,6 +33,11 @@
     state: directory
     mode: '0750'
 
+- ansible.builtin.file:
+    path: /etc/openvpn/client
+    state: directory
+    mode: '0750'
+
 #
 # Generate server configuration, start VPN server
 #
