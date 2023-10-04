@@ -49,7 +49,7 @@
     creates: '{{ item.username }}.7z'
   vars:
     password_file: '{{ inventory_dir }}/secrets/clients/{{ item.username }}/archive-password'
-    password: '{{ lookup("password", password_file, chars=["ascii_letters", "digits"], length=8) }}'
+    password: '{{ lookup("password", password_file, chars=["ascii_letters", "digits"], length=15) }}'
   with_items: '{{ vpn_clients }}'
   delegate_to: localhost
 
