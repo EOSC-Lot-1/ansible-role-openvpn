@@ -15,7 +15,7 @@
 
 - ansible.builtin.file:
     path: '{{ inventory_dir }}/data/auth.key'
-    mode: '0640'
+    mode: '0600'
   delegate_to: localhost
 
 - ansible.builtin.fetch:
@@ -31,7 +31,7 @@
 
 - ansible.builtin.file:
     path: '{{ inventory_dir }}/data/clients/{{ item.username }}/client.key'
-    mode: '0640'
+    mode: '0600'
   with_items: '{{ vpn_clients }}'
   delegate_to: localhost
 
@@ -41,15 +41,39 @@
     flat: true
   with_items: '{{ vpn_clients }}'
 
-- name: Create a bundle for each VPN client
-  ansible.builtin.command:
-    cmd: >-
-      7z a "-p{{ password }}" "{{ item.username }}.7z" "root.crt" "client.ovpn" "auth.key" "clients/{{ item.username }}/client.*"
-    chdir: '{{ inventory_dir }}/data'
-    creates: '{{ item.username }}.7z'
-  vars:
-    password_file: '{{ inventory_dir }}/secrets/clients/{{ item.username }}/archive-password'
-    password: '{{ lookup("password", password_file, chars=["ascii_letters", "digits"], length=15) }}'
-  with_items: '{{ vpn_clients }}'
+- block:
+  
+  - name: Create a tar bundle for each VPN client
+    ansible.builtin.command:
+      cmd: >-
+        tar cf "clients/{{ item.username }}.tar" "root.crt" "client.ovpn" "auth.key" -C "clients/{{ item.username }}/" .
+      chdir: '{{ inventory_dir }}/data'
+      creates: 'clients/{{ item.username }}.tar'
+    with_items: '{{ vpn_clients }}'
+  
+  - name: Encrypt config bundle for each VPN client (with client's PGP key)
+    ansible.builtin.command:
+      cmd: >-
+        gpg --batch --encrypt -v -r {{ item.email }} clients/{{ item.username }}.tar
+      chdir: '{{ inventory_dir }}/data'
+      creates: 'clients/{{ item.username }}.tar.gpg'
+    with_items: '{{ vpn_clients }}'
+    when: >-
+      encrypt_config_bundle_with_gpg_key
+  
+  - name: Encrypt config bundle for each VPN client (with a symmetric key unique for each client)
+    ansible.builtin.command:
+      cmd: >-
+        gpg --batch --symmetric -v --passphrase "{{ passphrase }}" clients/{{ item.username }}.tar
+      chdir: '{{ inventory_dir }}/data'
+      creates: 'clients/{{ item.username }}.tar.gpg'
+    with_items: '{{ vpn_clients }}'
+    vars:
+      passphrase_file: '{{ inventory_dir }}/secrets/clients/{{ item.username }}/archive-password'
+      passphrase: '{{ lookup("password", passphrase_file, chars=["ascii_letters", "digits"], length=15) }}'
+    when: >-
+      not (encrypt_config_bundle_with_gpg_key)
+
   delegate_to: localhost
+  become: false
 

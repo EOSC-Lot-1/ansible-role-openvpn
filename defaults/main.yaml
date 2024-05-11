@@ -21,3 +21,6 @@ vpn_dns_internal_domain:
 vpn_dns_server:
 
 vpn_clients: []
+
+# encrypt config bundle either with user's PGP key or with a simple passphrase
+encrypt_config_bundle_with_gpg_key: false
