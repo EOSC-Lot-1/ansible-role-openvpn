@@ -7,6 +7,13 @@
     - openvpn
   tags: [ "apt" ] 
 
+- ansible.builtin.assert:
+    that:
+    - private_ip is defined
+
+- ansible.builtin.set_fact:
+    private_network: '{{ ansible_facts.interfaces | map("extract", ansible_facts) | selectattr("ipv4", "defined") | map(attribute="ipv4") | selectattr("address", "equalto", private_ip) | first }}'
+
 - ansible.builtin.import_tasks:
     file: 01-setup-openvpn-server.yaml
 

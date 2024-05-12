@@ -14,7 +14,10 @@ vpn_host: ~
 vpn_port: 1194
 vpn_network: 10.9.8.0/24
 
-vpn_route_add_default_network: true
+# The IPv4 of the VPN server on the private network (it provides access to)
+#private_ip: 192.168.90.3
+
+vpn_route_add_private_network: true
 vpn_route_add: []
  
 vpn_dns_internal_domain:

@@ -2,8 +2,8 @@ remote {{ vpn_host }} {{ vpn_port }}
 dev tun1
 client
 
-{% if vpn_route_add_default_network %}
-route {{ ansible_default_ipv4.network }} {{ ansible_default_ipv4.netmask }}
+{% if vpn_route_add_private_network %}
+route {{ private_network.network }} {{ private_network.netmask }}
 {% endif %}
 {% for n in vpn_route_add %}
 route {{ n | ansible.utils.ipaddr("network") }} {{ n | ansible.utils.ipaddr("netmask") }}
