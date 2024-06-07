@@ -1,7 +1,7 @@
 ---
 - name: Setup private CA
   include_role:
-    # https://gitlab.ebrains.eu/technical-coordination/private/devops/ansible/ansible-role-ca
+    # https://github.com/EOSC-Lot-1/ansible-role-ca
     name: ca
   vars:
     ca_dir: /etc/openvpn/ca
@@ -12,7 +12,7 @@
       organization_name: '{{ organization_name }}'
       organizational_unit_name: '{{ organizational_unit_name }}'
       email_address: '{{ ca_email }}'
-      common_name: 'VPN CA 1'
+      common_name: '{{ ca_common_name }}'
   tags: [ "ca" ]
 
 - name: Enable forwarding for IPv4

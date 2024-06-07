@@ -2,7 +2,7 @@ remote {{ vpn_host }} {{ vpn_port }}
 dev tun1
 client
 
-{% if vpn_route_add_private_network %}
+{% if (private_network is defined) and vpn_route_add_private_network %}
 route {{ private_network.network }} {{ private_network.netmask }}
 {% endif %}
 {% for n in vpn_route_add %}

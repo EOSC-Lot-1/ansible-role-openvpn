@@ -6,6 +6,7 @@ organization_name: ~
 organizational_unit_name: ~
 
 ca_email: ~
+ca_common_name: "VPN CA 1"
 server_email: ~
 
 root_key_password_file: '{{ inventory_dir ~ "/secrets/root-key-password" }}'
